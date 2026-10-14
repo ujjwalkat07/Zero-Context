@@ -1,137 +1,159 @@
-# Zero-Context ⚡
+# Turborepo starter
 
-A high-performance memory layer and context compiler for AI agents powered by **Google Gemini** embeddings and **Prisma ORM with PostgreSQL PGvector**.
+This Turborepo starter is maintained by the Turborepo core team.
 
-```text
-               ┌────────────────────────────────────────────────────────┐
-Conversations  │                   Zero-Context Engine                  │
-or Facts ────► │  [Google Gemini (768-d)] ──► [Prisma ORM + PGvector]   │
-               │                                      │                 │
-               │   compile_context() ◄────────────────┴── search()      │
-               └───────────┬────────────────────────────────────────────┘
-                           ▼
-             Ready-to-Inject LLM Prompt Buffer (< 1 ms)
+## Using this example
+
+Run the following command:
+
+```sh
+npx create-turbo@latest
 ```
 
----
+## What's inside?
 
-## 🗄️ Prisma ORM Schema (`prisma/schema.prisma`)
+This Turborepo includes the following packages/apps:
 
-```prisma
-datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  extensions = [pgvector(map: "vector")]
-}
+### Apps and Packages
 
-generator client {
-  provider             = "prisma-client-py"
-  recursive_type_depth = 5
-  previewFeatures      = ["postgresqlExtensions"]
-}
+- `docs`: a [Next.js](https://nextjs.org/) app
+- `web`: another [Next.js](https://nextjs.org/) app
+- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
+- `@repo/eslint-config`: `eslint` configurations (includes `@next/eslint-plugin-next` and `eslint-config-prettier`)
+- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
 
-model Memory {
-  id        String   @id @default(uuid())
-  text      String
-  embedding Unsupported("vector(768)")
-  userId    String?  @map("user_id")
-  sessionId String?  @map("session_id")
-  metadata  Json?    @default("{}")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
-  @@index([userId])
-  @@index([sessionId])
-  @@map("zero_context_memories")
-}
+### Utilities
+
+This Turborepo has some additional tools already setup for you:
+
+- [TypeScript](https://www.typescriptlang.org/) for static type checking
+- [ESLint](https://eslint.org/) for code linting
+- [Prettier](https://prettier.io) for code formatting
+
+### Build
+
+To build all apps and packages, run the following command:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+
+```sh
+cd my-turborepo
+turbo build
 ```
 
----
+Without global `turbo`, use your package manager:
 
-## 🛠️ Quickstart
-
-### 1. Installation
-
-```bash
-git clone https://github.com/ujjwalkat07/Zero-Context.git
-cd Zero-Context
-
-# Synchronize virtual environment with uv
-uv sync
-
-# Generate Prisma Client Python
-uv run prisma generate
+```sh
+cd my-turborepo
+npx turbo build
+npm exec turbo build
+npm exec turbo build
 ```
 
-### 2. Configure Database & Environment
+You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
 
-```bash
-# Start PostgreSQL with pgvector (via Docker)
-docker run -d --name zero-pgvector -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=zero_context pgvector/pgvector:pg17
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
 
-# Push schema directly to PostgreSQL using Prisma
-uv run prisma db push
-
-# Set environment variables
-export GEMINI_API_KEY="your-google-gemini-api-key"
-export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/zero_context"
+```sh
+turbo build --filter=docs
 ```
 
-### 3. Usage Example
+Without global `turbo`:
 
-```python
-from zero_context import Memory
-
-# Initialize Memory with Gemini & Prisma PGvector
-mem = Memory()
-
-# 1. Ingest conversational facts scoped to a user
-mem.add(
-    [
-        "User prefers Python and Rust for backend development.",
-        "User's favorite framework is FastAPI.",
-        "User lives in San Francisco and works remotely.",
-    ],
-    user_id="user_alice",
-)
-
-# 2. Nearest-Neighbor Vector Search (via Prisma PGvector <=> distance)
-results = mem.search("What programming languages does the user prefer?", user_id="user_alice")
-for r in results:
-    print(f"- {r.memory.text} (relevance: {r.score * 100:.1f}%)")
-
-# 3. Direct LLM System Prompt Context Assembly
-prompt_block = mem.compile_context("Recommend an architecture stack", user_id="user_alice")
-print(prompt_block)
+```sh
+npx turbo build --filter=docs
+npm exec turbo build --filter=docs
+npm exec turbo build --filter=docs
 ```
 
-**Output:**
-```text
-=== RELEVANT CONTEXT FROM MEMORY ===
-- User prefers Python and Rust for backend development. (relevance: 82%)
-- User's favorite framework is FastAPI. (relevance: 54%)
+### Develop
+
+To develop all apps and packages, run the following command:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+
+```sh
+cd my-turborepo
+turbo dev
 ```
 
----
+Without global `turbo`, use your package manager:
 
-## 🧪 Testing & Code Quality
-
-```powershell
-# Run the test suite (all passing)
-uv run pytest
-
-# Strict static type checking with mypy
-uv run mypy
-
-# Lint & formatting check
-uv run ruff check .
-
-# Run the live demo
-uv run python examples/pgvector_gemini_demo.py
+```sh
+cd my-turborepo
+npx turbo dev
+npm exec turbo dev
+npm exec turbo dev
 ```
 
----
+You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
 
-## 📄 License
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
 
-MIT
+```sh
+turbo dev --filter=web
+```
+
+Without global `turbo`:
+
+```sh
+npx turbo dev --filter=web
+npm exec turbo dev --filter=web
+npm exec turbo dev --filter=web
+```
+
+### Remote Caching
+
+> [!TIP]
+> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+
+Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+
+By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+
+```sh
+cd my-turborepo
+turbo login
+```
+
+Without global `turbo`, use your package manager:
+
+```sh
+cd my-turborepo
+npx turbo login
+npm exec turbo login
+npm exec turbo login
+```
+
+This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+
+Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+
+```sh
+turbo link
+```
+
+Without global `turbo`:
+
+```sh
+npx turbo link
+npm exec turbo link
+npm exec turbo link
+```
+
+## Useful Links
+
+Learn more about the power of Turborepo:
+
+- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
+- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
+- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
+- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
+- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
+- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
