@@ -1,0 +1,26 @@
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+generator client {
+  provider             = "prisma-client-py"
+  recursive_type_depth = 5
+  previewFeatures      = ["postgresqlExtensions"]
+}
+
+model Memory {
+  id        String   @id @default(uuid())
+  text      String
+  embedding Unsupported("vector(768)")
+  userId    String?  @map("user_id")
+  sessionId String?  @map("session_id")
+  metadata  Json?    @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([sessionId])
+  @@map("zero_context_memories")
+}

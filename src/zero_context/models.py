@@ -54,7 +54,7 @@ class SearchResult(msgspec.Struct, frozen=True):
 class MemoryConfig(msgspec.Struct, frozen=True, gc=False):
     """Configuration options for Zero-Context memory engine."""
 
-    dimension: int = 256
+    dimension: int = 768
     similarity_threshold: float = 0.0
     default_top_k: int = 5
     max_context_chars: int = 1500

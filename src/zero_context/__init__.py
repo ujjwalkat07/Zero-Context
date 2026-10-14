@@ -1,11 +1,12 @@
-"""Zero-Context: Ultra-fast, zero-dependency in-process memory engine for AI agents."""
+"""Zero-Context: Memory engine powered by Gemini embeddings and Prisma ORM PGVector."""
 
 from __future__ import annotations
 
 from zero_context.embeddings import (
     CallableEmbedding,
     EmbeddingProvider,
-    FastHashEmbedding,
+    GeminiEmbedding,
+    MockGeminiEmbedding,
 )
 from zero_context.engine import Memory, ZeroMemory
 from zero_context.exceptions import (
@@ -14,19 +15,20 @@ from zero_context.exceptions import (
     ZeroContextError,
 )
 from zero_context.models import MemoryConfig, MemoryItem, SearchResult
-from zero_context.store import MemoryStore
+from zero_context.store import PrismaVectorStore
 
-__version__ = "0.2.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "CallableEmbedding",
     "EmbeddingProvider",
-    "FastHashEmbedding",
+    "GeminiEmbedding",
     "Memory",
     "MemoryConfig",
     "MemoryItem",
     "MemoryNotFoundError",
-    "MemoryStore",
+    "MockGeminiEmbedding",
+    "PrismaVectorStore",
     "SearchResult",
     "StorageError",
     "ZeroContextError",

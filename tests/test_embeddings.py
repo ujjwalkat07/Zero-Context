@@ -1,34 +1,33 @@
-"""Tests for embedding generators."""
+"""Tests for Gemini and mock embeddings."""
 
 from __future__ import annotations
 
 import math
 
-from zero_context import CallableEmbedding, FastHashEmbedding
+from zero_context import CallableEmbedding, MockGeminiEmbedding
 
 
-def test_fasthash_normalization() -> None:
-    embedder = FastHashEmbedding(dimension=128)
-    vec = embedder.embed_text("High performance Python vector indexing")
-    assert len(vec) == 128
+def test_mock_gemini_normalization() -> None:
+    embedder = MockGeminiEmbedding(dimension=768)
+    vec = embedder.embed_text("Testing Google Gemini text-embedding-004")
+    assert len(vec) == 768
 
     norm = math.sqrt(sum(x * x for x in vec))
     assert abs(norm - 1.0) < 1e-4
 
 
-def test_fasthash_empty_string() -> None:
-    embedder = FastHashEmbedding(dimension=64)
+def test_mock_gemini_empty_string() -> None:
+    embedder = MockGeminiEmbedding(dimension=768)
     vec = embedder.embed_text("")
-    assert len(vec) == 64
+    assert len(vec) == 768
     assert all(x == 0.0 for x in vec)
 
 
 def test_callable_embedding() -> None:
-    def dummy_embed(text: str) -> list[float]:
-        return [1.0, 2.0, 3.0]
+    def custom_fn(text: str) -> list[float]:
+        return [0.1] * 768
 
-    embedder = CallableEmbedding(dummy_embed, dimension=3)
+    embedder = CallableEmbedding(custom_fn, dimension=768)
     vec = embedder.embed_text("test")
-    assert len(vec) == 3
-    norm = math.sqrt(sum(x * x for x in vec))
-    assert abs(norm - 1.0) < 1e-5
+    assert len(vec) == 768
+    assert vec[0] == 0.1

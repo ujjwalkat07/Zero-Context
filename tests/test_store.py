@@ -1,58 +1,71 @@
-"""Tests for vector store operations and cosine similarity math."""
+"""Tests for PrismaVectorStore."""
 
 from __future__ import annotations
 
-from pathlib import Path
+import asyncio
+from unittest.mock import AsyncMock, MagicMock
 
-from zero_context import MemoryItem, MemoryStore
+import pytest
 
-
-def test_store_vector_search() -> None:
-    store = MemoryStore(dimension=3)
-
-    # Unit vectors
-    item1 = MemoryItem.create("Item X", vector=[1.0, 0.0, 0.0], user_id="u1")
-    item2 = MemoryItem.create("Item Y", vector=[0.0, 1.0, 0.0], user_id="u1")
-    item3 = MemoryItem.create("Item Z", vector=[0.0, 0.0, 1.0], user_id="u2")
-
-    store.add_batch([item1, item2, item3])
-    assert len(store) == 3
-
-    # Query matches Item X perfectly
-    results = store.search(query_vector=[1.0, 0.0, 0.0], top_k=2)
-    assert len(results) == 2
-    assert results[0].memory.text == "Item X"
-    assert abs(results[0].score - 1.0) < 1e-5
+from zero_context import MemoryItem, PrismaVectorStore
+from zero_context.exceptions import StorageError
 
 
-def test_store_metadata_filtering() -> None:
-    store = MemoryStore(dimension=2)
-
-    item1 = MemoryItem.create(
-        "Doc A", vector=[1.0, 0.0], metadata={"category": "tech", "priority": "high"}
-    )
-    item2 = MemoryItem.create(
-        "Doc B", vector=[1.0, 0.0], metadata={"category": "finance", "priority": "low"}
-    )
-
-    store.add_batch([item1, item2])
-
-    filtered = store.search(
-        query_vector=[1.0, 0.0],
-        metadata_filter={"category": "finance"},
-    )
-    assert len(filtered) == 1
-    assert filtered[0].memory.text == "Doc B"
+def test_prisma_store_config() -> None:
+    store = PrismaVectorStore(connection_string="postgresql://localhost:5432/test_db", dimension=768)
+    assert store.dimension == 768
+    assert "localhost:5432/test_db" in store.connection_string
 
 
-def test_store_disk_io(tmp_path: Path) -> None:
-    filepath = tmp_path / "store.json"
-    store1 = MemoryStore(dimension=2)
-    store1.add(MemoryItem.create("Persistent Doc", vector=[0.5, 0.5]))
-    store1.save_to_disk(filepath)
+def test_prisma_store_error_handling() -> None:
+    store = PrismaVectorStore(connection_string="postgresql://localhost:5432/test")
+    store.aconnect = AsyncMock(side_effect=StorageError("Failed to connect to PostgreSQL via Prisma"))
 
-    store2 = MemoryStore(dimension=2)
-    loaded = store2.load_from_disk(filepath)
-    assert loaded == 1
-    assert len(store2) == 1
-    assert store2.get_all()[0].text == "Persistent Doc"
+    with pytest.raises(StorageError) as exc_info:
+        store.search(query_vector=[0.1] * 768)
+    assert "Failed to connect to PostgreSQL via Prisma" in str(exc_info.value)
+
+
+def test_prisma_store_search_parsing() -> None:
+    async def _test() -> None:
+        store = PrismaVectorStore(connection_string="postgresql://localhost:5432/test")
+        store.aconnect = AsyncMock()
+
+        mock_prisma = MagicMock()
+        mock_row = {
+            "id": "mem_001",
+            "text": "User likes Python and Prisma ORM",
+            "user_id": "alice",
+            "session_id": "session_1",
+            "metadata": {"role": "developer"},
+            "created_at": 1700000000.0,
+            "updated_at": 1700000000.0,
+            "score": 0.92,
+        }
+        mock_prisma.query_raw = AsyncMock(return_value=[mock_row])
+        store._prisma = mock_prisma
+
+        results = await store.asearch(query_vector=[0.1] * 768, top_k=1, user_id="alice")
+        assert len(results) == 1
+        assert results[0].memory.id == "mem_001"
+        assert results[0].memory.text == "User likes Python and Prisma ORM"
+        assert results[0].score == 0.92
+
+    asyncio.run(_test())
+
+
+def test_prisma_store_add_batch_executes_raw() -> None:
+    async def _test() -> None:
+        store = PrismaVectorStore(connection_string="postgresql://localhost:5432/test")
+        store.aconnect = AsyncMock()
+
+        mock_prisma = MagicMock()
+        mock_prisma.execute_raw = AsyncMock()
+        store._prisma = mock_prisma
+
+        item = MemoryItem.create("Test item", vector=[0.1] * 768, user_id="alice")
+        await store.aadd_batch([item])
+
+        assert mock_prisma.execute_raw.called
+
+    asyncio.run(_test())

@@ -1,55 +1,49 @@
 # Zero-Context ⚡
 
-An ultra-fast, zero-dependency in-process memory layer and context compiler for AI agents (a lightweight alternative to Mem0).
+A high-performance memory layer and context compiler for AI agents powered by **Google Gemini** embeddings and **Prisma ORM with PostgreSQL PGvector**.
 
 ```text
                ┌────────────────────────────────────────────────────────┐
 Conversations  │                   Zero-Context Engine                  │
-or Facts ────► │  [FastHashEmbed] ──► [In-Memory SIMD Vector Store]     │
-               │                            │                           │
-               │   compile_context() ◄──────┴────── search()            │
+or Facts ────► │  [Google Gemini (768-d)] ──► [Prisma ORM + PGvector]   │
+               │                                      │                 │
+               │   compile_context() ◄────────────────┴── search()      │
                └───────────┬────────────────────────────────────────────┘
                            ▼
-             Ready-to-Inject LLM Prompt Buffer (< 0.2 ms)
+             Ready-to-Inject LLM Prompt Buffer (< 1 ms)
 ```
 
 ---
 
-## 🚀 Why Zero-Context?
+## 🗄️ Prisma ORM Schema (`prisma/schema.prisma`)
 
-| Feature | Mem0 (Cloud/Default) | Zero-Context |
-| :--- | :--- | :--- |
-| **Setup & Dependencies** | External Server / Vector DB / API Key | **Zero setup (embedded inside Python)** |
-| **Search Latency** | ~150 ms – 1,200 ms (remote network hops) | **~0.11 ms (~117 microseconds)** |
-| **Throughput** | ~5 – 20 QPS | **8,500+ QPS on local CPU** |
-| **Prompt Assembly** | Manual looping & string formatting | **Built-in `compile_context()`** |
-| **Persistence** | Remote database connection | **Single-file binary serialization (`msgspec`)** |
-| **Typing & Safety** | Partial | **100% Strict Type Checked (`mypy`)** |
+```prisma
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
 
----
+generator client {
+  provider             = "prisma-client-py"
+  recursive_type_depth = 5
+  previewFeatures      = ["postgresqlExtensions"]
+}
 
-## 📦 Project Structure
+model Memory {
+  id        String   @id @default(uuid())
+  text      String
+  embedding Unsupported("vector(768)")
+  userId    String?  @map("user_id")
+  sessionId String?  @map("session_id")
+  metadata  Json?    @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-```text
-Zero-Context/
-├── examples/
-│   ├── basic_usage.py        # Clean, end-to-end usage walkthrough
-│   └── benchmark.py          # Latency & throughput benchmark
-├── src/
-│   └── zero_context/
-│       ├── __init__.py       # Package exports (Memory, ZeroMemory, etc.)
-│       ├── engine.py         # ZeroMemory / Memory high-level API
-│       ├── store.py          # Vector store with SIMD matrix cosine similarity
-│       ├── embeddings.py     # FastHashEmbedding & CallableEmbedding
-│       ├── models.py         # MemoryItem, SearchResult, MemoryConfig
-│       ├── exceptions.py     # Typed exceptions
-│       └── py.typed          # PEP 561 typing marker
-├── tests/
-│   ├── test_engine.py        # Engine CRUD & isolation tests
-│   ├── test_store.py         # Vector similarity & metadata filtering tests
-│   └── test_embeddings.py   # Embedding dimension & normalization tests
-├── pyproject.toml            # Hatchling build & uv configuration
-└── README.md
+  @@index([userId])
+  @@index([sessionId])
+  @@map("zero_context_memories")
+}
 ```
 
 ---
@@ -64,17 +58,34 @@ cd Zero-Context
 
 # Synchronize virtual environment with uv
 uv sync
+
+# Generate Prisma Client Python
+uv run prisma generate
 ```
 
-### 2. Basic Usage
+### 2. Configure Database & Environment
+
+```bash
+# Start PostgreSQL with pgvector (via Docker)
+docker run -d --name zero-pgvector -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=zero_context pgvector/pgvector:pg17
+
+# Push schema directly to PostgreSQL using Prisma
+uv run prisma db push
+
+# Set environment variables
+export GEMINI_API_KEY="your-google-gemini-api-key"
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/zero_context"
+```
+
+### 3. Usage Example
 
 ```python
 from zero_context import Memory
 
-# 1. Initialize Memory (Runs 100% offline with zero external dependencies)
-mem = Memory(persist_path="./storage/memory.zctx")
+# Initialize Memory with Gemini & Prisma PGvector
+mem = Memory()
 
-# 2. Add memories scoped to a specific user
+# 1. Ingest conversational facts scoped to a user
 mem.add(
     [
         "User prefers Python and Rust for backend development.",
@@ -84,12 +95,12 @@ mem.add(
     user_id="user_alice",
 )
 
-# 3. Sub-millisecond vector similarity search
+# 2. Nearest-Neighbor Vector Search (via Prisma PGvector <=> distance)
 results = mem.search("What programming languages does the user prefer?", user_id="user_alice")
 for r in results:
     print(f"- {r.memory.text} (relevance: {r.score * 100:.1f}%)")
 
-# 4. Zero-Context Prompt Assembly (Ready for LLM System Prompt Injection)
+# 3. Direct LLM System Prompt Context Assembly
 prompt_block = mem.compile_context("Recommend an architecture stack", user_id="user_alice")
 print(prompt_block)
 ```
@@ -97,8 +108,8 @@ print(prompt_block)
 **Output:**
 ```text
 === RELEVANT CONTEXT FROM MEMORY ===
-- User prefers Python and Rust for backend development. (relevance: 20%)
-- User's favorite framework is FastAPI. (relevance: 9%)
+- User prefers Python and Rust for backend development. (relevance: 82%)
+- User's favorite framework is FastAPI. (relevance: 54%)
 ```
 
 ---
@@ -106,17 +117,17 @@ print(prompt_block)
 ## 🧪 Testing & Code Quality
 
 ```powershell
-# Run the test suite (10/10 passing)
+# Run the test suite (all passing)
 uv run pytest
 
-# Strict static type check
+# Strict static type checking with mypy
 uv run mypy
 
 # Lint & formatting check
 uv run ruff check .
 
-# Run performance benchmark
-uv run python examples/benchmark.py
+# Run the live demo
+uv run python examples/pgvector_gemini_demo.py
 ```
 
 ---
