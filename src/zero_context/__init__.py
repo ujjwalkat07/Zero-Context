@@ -1,46 +1,34 @@
-"""ZeroContext - High-performance Python SDK engineered for throughput and low-latency."""
+"""Zero-Context: Ultra-fast, zero-dependency in-process memory engine for AI agents."""
 
 from __future__ import annotations
 
-from zero_context._async_client import AsyncClient
-from zero_context._client import Client
-from zero_context._config import Config
-from zero_context._exceptions import (
-    APIError,
-    AuthenticationError,
-    ConnectionTimeoutError,
-    NotFoundError,
-    RateLimitError,
-    SerializationError,
-    ServerError,
-    TransportError,
+from zero_context.embeddings import (
+    CallableEmbedding,
+    EmbeddingProvider,
+    FastHashEmbedding,
+)
+from zero_context.engine import Memory, ZeroMemory
+from zero_context.exceptions import (
+    MemoryNotFoundError,
+    StorageError,
     ZeroContextError,
 )
-from zero_context._models import APIResponse, RateLimitInfo, StreamChunk
-from zero_context._serializer import decode_json, decode_json_raw, encode_json
-from zero_context._streaming import AsyncStreamResponse, StreamResponse
+from zero_context.models import MemoryConfig, MemoryItem, SearchResult
+from zero_context.store import MemoryStore
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
-    "APIError",
-    "APIResponse",
-    "AsyncClient",
-    "AsyncStreamResponse",
-    "AuthenticationError",
-    "Client",
-    "Config",
-    "ConnectionTimeoutError",
-    "NotFoundError",
-    "RateLimitError",
-    "RateLimitInfo",
-    "SerializationError",
-    "ServerError",
-    "StreamChunk",
-    "StreamResponse",
-    "TransportError",
+    "CallableEmbedding",
+    "EmbeddingProvider",
+    "FastHashEmbedding",
+    "Memory",
+    "MemoryConfig",
+    "MemoryItem",
+    "MemoryNotFoundError",
+    "MemoryStore",
+    "SearchResult",
+    "StorageError",
     "ZeroContextError",
-    "decode_json",
-    "decode_json_raw",
-    "encode_json",
+    "ZeroMemory",
 ]

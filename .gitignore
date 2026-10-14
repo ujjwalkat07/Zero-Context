@@ -50,3 +50,5 @@ htmlcov/
 Thumbs.db
 .vscode/
 .idea/
+demo_storage/
+storage/
