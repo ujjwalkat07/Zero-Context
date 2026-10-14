@@ -17,7 +17,7 @@ from zero_context.exceptions import (
 from zero_context.models import MemoryConfig, MemoryItem, SearchResult
 from zero_context.store import PrismaVectorStore
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
     "CallableEmbedding",
