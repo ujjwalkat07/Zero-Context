@@ -239,11 +239,19 @@ class PrismaVectorStore:
     def get(self, memory_id: str) -> MemoryItem | None:
         return self._run_sync(self.aget(memory_id))
 
-    async def aget_all(self, user_id: str | None = None) -> list[MemoryItem]:
+    async def aget_all(
+        self,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> list[MemoryItem]:
         await self.aconnect()
         try:
-            where_clause: MemoryWhereInput | None = {"userId": user_id} if user_id else None
-            records = await self._prisma.memory.find_many(where=where_clause)
+            where_input: MemoryWhereInput = {}
+            if user_id is not None:
+                where_input["userId"] = user_id
+            if session_id is not None:
+                where_input["sessionId"] = session_id
+            records = await self._prisma.memory.find_many(where=where_input if where_input else None)
             return [
                 MemoryItem(
                     id=rec.id,
@@ -260,8 +268,12 @@ class PrismaVectorStore:
         except Exception as err:
             raise StorageError(f"Prisma failed to fetch memories: {err}") from err
 
-    def get_all(self, user_id: str | None = None) -> list[MemoryItem]:
-        return self._run_sync(self.aget_all(user_id=user_id))
+    def get_all(
+        self,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> list[MemoryItem]:
+        return self._run_sync(self.aget_all(user_id=user_id, session_id=session_id))
 
     async def adelete(self, memory_id: str) -> bool:
         await self.aconnect()
@@ -274,14 +286,26 @@ class PrismaVectorStore:
     def delete(self, memory_id: str) -> bool:
         return self._run_sync(self.adelete(memory_id))
 
-    async def aclear(self, user_id: str | None = None) -> int:
+    async def aclear(
+        self,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> int:
         await self.aconnect()
         try:
-            where_del: MemoryWhereInput | None = {"userId": user_id} if user_id else None
-            res = await self._prisma.memory.delete_many(where=where_del)
+            where_del: MemoryWhereInput = {}
+            if user_id is not None:
+                where_del["userId"] = user_id
+            if session_id is not None:
+                where_del["sessionId"] = session_id
+            res = await self._prisma.memory.delete_many(where=where_del if where_del else None)
             return res
         except Exception as err:
             raise StorageError(f"Prisma failed to clear memories: {err}") from err
 
-    def clear(self, user_id: str | None = None) -> int:
-        return self._run_sync(self.aclear(user_id=user_id))
+    def clear(
+        self,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> int:
+        return self._run_sync(self.aclear(user_id=user_id, session_id=session_id))

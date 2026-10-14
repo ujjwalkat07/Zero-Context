@@ -120,8 +120,10 @@ class ZeroMemory:
         self,
         query: str,
         user_id: str | None = None,
+        session_id: str | None = None,
         limit: int = 5,
         threshold: float = 0.0,
+        metadata_filter: dict[str, Any] | None = None,
         max_chars: int = 1500,
         header: str = "=== RELEVANT CONTEXT FROM MEMORY ===",
     ) -> str:
@@ -132,8 +134,10 @@ class ZeroMemory:
         matches = self.search(
             query=query,
             user_id=user_id,
+            session_id=session_id,
             limit=limit,
             threshold=threshold,
+            metadata_filter=metadata_filter,
         )
         if not matches:
             return ""
@@ -155,21 +159,33 @@ class ZeroMemory:
         """Retrieve a specific memory by its ID."""
         return self.store.get(memory_id)
 
-    def get_all(self, user_id: str | None = None) -> list[MemoryItem]:
-        """Retrieve all stored memories, optionally filtered by user."""
-        return self.store.get_all(user_id=user_id)
+    def get_all(
+        self,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> list[MemoryItem]:
+        """Retrieve all stored memories, optionally filtered by user and/or session."""
+        return self.store.get_all(user_id=user_id, session_id=session_id)
 
     def delete(self, memory_id: str) -> bool:
         """Delete a memory item by ID."""
         return self.store.delete(memory_id)
 
-    def clear(self, user_id: str | None = None) -> int:
-        """Clear memories (optionally scoped to a specific user)."""
-        return self.store.clear(user_id=user_id)
+    def clear(
+        self,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> int:
+        """Clear memories (optionally scoped to a specific user and/or session)."""
+        return self.store.clear(user_id=user_id, session_id=session_id)
 
-    def count(self, user_id: str | None = None) -> int:
+    def count(
+        self,
+        user_id: str | None = None,
+        session_id: str | None = None,
+    ) -> int:
         """Get the total count of stored memories."""
-        return len(self.get_all(user_id=user_id))
+        return len(self.get_all(user_id=user_id, session_id=session_id))
 
 
 # User-friendly alias

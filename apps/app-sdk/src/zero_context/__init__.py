@@ -1,6 +1,6 @@
 """Zero-Context: Memory engine powered by Gemini embeddings and Prisma ORM PGVector."""
 
-from __future__ import annotations
+from pathlib import Path
 
 from zero_context.embeddings import (
     CallableEmbedding,
@@ -17,7 +17,13 @@ from zero_context.exceptions import (
 from zero_context.models import MemoryConfig, MemoryItem, SearchResult
 from zero_context.store import PrismaVectorStore
 
-__version__ = "0.5.0"
+__version__ = "0.2.0"
+
+
+def get_schema_path() -> Path:
+    """Return the filesystem path to the bundled Prisma schema."""
+    return Path(__file__).parent / "schema.prisma"
+
 
 __all__ = [
     "CallableEmbedding",
@@ -33,4 +39,5 @@ __all__ = [
     "StorageError",
     "ZeroContextError",
     "ZeroMemory",
+    "get_schema_path",
 ]

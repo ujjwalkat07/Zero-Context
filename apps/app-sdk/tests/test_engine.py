@@ -53,3 +53,12 @@ def test_engine_add_and_crud() -> None:
     assert mem.delete(ids[0]) is True
     assert mem.clear(user_id="u1") == 1
     assert mem.count() == 1
+
+
+def test_get_schema_path() -> None:
+    from zero_context import get_schema_path
+
+    schema_file = get_schema_path()
+    assert schema_file.exists()
+    assert schema_file.name == "schema.prisma"
+
