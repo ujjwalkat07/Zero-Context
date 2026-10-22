@@ -126,8 +126,11 @@ uv run mypy
 # Lint & formatting check
 uv run ruff check .
 
-# Run the live demo
-uv run python examples/pgvector_gemini_demo.py
+# Seed dummy data into PostgreSQL
+python seed.py
+
+# Run the interactive customer agent
+python customer_agent.py
 ```
 
 ---
